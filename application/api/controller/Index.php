@@ -3,9 +3,13 @@ namespace app\api\controller;
 
 use app\api\BaseController;
 
+use app\api\library\Token;
+
 class Index extends BaseController
 {
 	
+    protected $noNeedLogin = ['index', 'hello', 'login', 'register'];
+
     /**
      * 响应多语言
      * api/index/index
@@ -18,7 +22,7 @@ class Index extends BaseController
 
     /**
      * 路由实例
-     * hello/:name
+     * hello/:name 或 api/index/hello?name=test
      */
     public function hello($name = 'ThinkPHP5')
     {
@@ -56,4 +60,83 @@ class Index extends BaseController
         }
     }
 
+    /**
+     * 登陆例子
+     * api/index/login
+     */
+    public function login(){
+        $account = input('param.account');
+        $password = input('param.password');
+        if (!$account || !$password)
+        {
+            $this->error('Invalid parameters');
+        }
+        $ret = $this->auth->login($account, $password);
+        if ($ret)
+        {
+            $data = ['userinfo' => $this->auth->getUserinfo(), 'token' => $this->auth->getToken()];
+            $this->success('Logged in successful', $data);
+        }
+        else
+        {
+            $this->error($this->auth->getError());
+        }
+    }
+
+    /**
+     * 会员注册
+     * api/index/register
+     * @param string $username
+     * @param string $password
+     * @param string $email 可选
+     * @param string $mobile 可选
+     * @param array $extend 可选
+     */
+    public function register(){
+        $username = input('param.username');
+        $password = input('param.password');
+        $ret = $this->auth->register($username, $password);
+        if($ret){
+            $data = ['userinfo' => $this->auth->getUserinfo(), 'token' => $this->auth->getToken()];
+            $this->success('Register in successful', $data);
+        }else{
+            $this->error($this->auth->getError());
+        }
+    }
+
+    /**
+     * 注销登录
+     * api/index/logout
+     * 携带token
+     */
+    public function logout()
+    {
+        $this->auth->logout();
+        $this->success('Logout successful');
+    }
+
+    /**
+     * 修改密码
+     * @param string    $newpassword        新密码
+     * @param string    $oldpassword        旧密码
+     * @param bool      $ignoreoldpassword  忽略旧密码
+     * @return boolean
+     */
+    public function change(){
+        $newpassword = '123456';
+        $ret = $this->auth->changePassword($newpassword, '', true);
+        if($ret){
+            $this->success('Change in successful');
+        }else{
+            $this->error($this->auth->getError());
+        }
+    }
+
+    /**
+     * 获取用户信息
+     */
+    public function info(){
+        $info = $this->auth->getUserinfo();
+        $this->success('successful', $info);
+    }
 }

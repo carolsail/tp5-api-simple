@@ -40,6 +40,18 @@ class BaseController
     protected $batchValidate = false;
 
     /**
+     * 权限Auth
+     * @var Auth 
+     */
+    protected $auth = null;
+
+    /**
+     * 无需登录的方法
+     * @var array
+     */
+    protected $noNeedLogin = [];
+
+    /**
      * 构造方法
      * @access public
      * @param Request $request Request 对象
@@ -61,6 +73,29 @@ class BaseController
     {
         // 移除HTML标签
         $this->request->filter('strip_tags');
+        $this->auth = Auth::instance();
+
+        // 是否携带token请求
+        $token = $this->request->server('HTTP_TOKEN', $this->request->request('token', \think\facade\Cookie::get('token')));
+
+        // 检测是否需要验证登录
+        if (!$this->auth->match($this->noNeedLogin))
+        {
+            // 初始化
+            $this->auth->init($token);
+            // 检测是否登录
+            if (!$this->auth->isLogin())
+            {
+                $this->error(__('Please login first'), null, 401);
+            }
+        }else
+        {
+            // 如果有传递token才验证是否登录状态
+            if ($token)
+            {
+                $this->auth->init($token);
+            }
+        }
     }
 
 	/**
